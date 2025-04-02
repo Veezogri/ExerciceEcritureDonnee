@@ -4,7 +4,7 @@ require_once 'db.php';
 require_once 'header.php';
 
 echo '<h1>Liste des rendez-vous</h1>';
-$sql = 'SELECT * FROM appointments INNER JOIN patients ON appointments.idPatients = patients.id ORDER BY datehour ASC';
+$sql = 'SELECT a.id AS id, p.id AS patientId, a.dateHour, p.lastname, p.firstname FROM appointments AS a INNER JOIN patients AS p ON a.idPatients = p.id ORDER BY datehour ASC';
 $stmt = $conn->prepare($sql);
 $stmt->execute();
 $rdvs = $stmt->fetchAll(PDO::FETCH_ASSOC);

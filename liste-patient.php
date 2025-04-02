@@ -1,89 +1,120 @@
-<!-- page qui affiche la liste des patients -->
 <?php
 require_once 'db.php';
 require_once 'header.php';
 
-echo '<h1>Liste des patients</h1>';
+$pageActuelle = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$pageActuelle = max(1, $pageActuelle);
+$patientsParPage = 10;
+$offset = ($pageActuelle - 1) * $patientsParPage;
 
-// faire pagination et donc là je vais défnir le nombre de patients par page
-$patientsPerPage = 10; 
-$pageactuelle = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$offset = ($pageactuelle - 1) * $patientsPerPage;
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
+if (!empty($search)) {
+    $searchParam = '%' . $search . '%';
+    $sql = 'SELECT * FROM patients WHERE lastname LIKE :search OR firstname LIKE :search LIMIT :limit OFFSET :offset';
+    $stmt = $conn->prepare($sql);
+    $stmt->bindValue(':search', $searchParam);
+    $stmt->bindValue(':limit', $patientsParPage, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-
-// là je vais faire une requête pour récupérer le nombre total de patients
-$sqlCount = 'SELECT COUNT(*) as total FROM patients';
-$stmtCount = $conn->prepare($sqlCount);
-$stmtCount->execute();
-$totalPatients = $stmtCount->fetch(PDO::FETCH_ASSOC)['total'];
-
-// calcule le nombre total de pages qu'il faut pour afficher tous les patients
-$totalPages = ceil($totalPatients / $patientsPerPage);
-
-
-// là je vais faire une requête pour récupérer les patients avec la pagination
-
-$sqlPatients = 'SELECT * FROM patients LIMIT :offset, :limit';
-$stmtPatients = $conn->prepare($sqlPatients);
-$stmtPatients->bindParam(':offset', $offset, PDO::PARAM_INT);
-$stmtPatients->bindParam(':limit', $patientsPerPage, PDO::PARAM_INT);
-$stmtPatients->execute();
-$patients = $stmtPatients->fetchAll(PDO::FETCH_ASSOC);
-
-
-
-
-
-if(count($patients) > 0){
-    echo '<table>';
-    echo '<tr>';
-    echo '<th>Nom</th>';
-    echo '<th>Prénom</th>';
-    echo '<th>Date de naissance</th>';
-    echo '<th>Téléphone</th>';
-    echo '<th>Email</th>';
-    echo '</tr>';
-
-    foreach($patients as $patient){
-
-        echo '<tr>';
-        echo '<td>' . $patient['lastname'] . '</td>';
-        echo '<td>' . $patient['firstname'] . '</td>';
-        echo '<td>' . $patient['birthdate'] . '</td>';
-        echo '<td>' . $patient['phone'] . '</td>';
-        echo '<td>' . $patient['mail'] . '</td>';
-        echo '<td><a href="profil-patient.php?id=' . $patient['id'] . '">Voir profil</a></td>';
-        echo '<td><a href="profil-patient.php?id=' . $patient['id'] . '&action=delete2">Supprimer</a></td>';
-
-        echo '</tr>';
-    }
-    echo '</table>';
+    $countStmt = $conn->prepare('SELECT COUNT(*) FROM patients WHERE lastname LIKE :search OR firstname LIKE :search');
+    $countStmt->bindValue(':search', $searchParam);
+    $countStmt->execute();
+    $totalPatients = $countStmt->fetchColumn();
 } else {
-    echo 'Aucun patient trouvé.';
+    $sql = 'SELECT * FROM patients LIMIT :limit OFFSET :offset';
+    $stmt = $conn->prepare($sql);
+    $stmt->bindValue(':limit', $patientsParPage, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $countStmt = $conn->query('SELECT COUNT(*) FROM patients');
+    $totalPatients = $countStmt->fetchColumn();
 }
 
-
-echo '<div class="pagination">';
-if ($pageactuelle > 1) {
-    echo '<a href="?page=' . ($pageactuelle - 1) . '">Précédent</a> ';
-}
-for ($i = 1; $i <= $totalPages; $i++) {
-    if ($i == $pageactuelle) {
-        echo '<strong>' . $i . '</strong> ';
-    } else {
-        echo '<a href="?page=' . $i . '">' . $i . '</a> ';
-    }
-}
-if ($pageactuelle < $totalPages) {
-    echo '<a href="?page=' . ($pageactuelle + 1) . '">Suivant</a>';
-}
-echo '</div>';
-
-
-
-
-$conn = null;
+$totalPages = ceil($totalPatients / $patientsParPage);
 ?>
 
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <h1 class="text-3xl font-bold text-center text-blue-700 mb-6">Liste des patients</h1>
+
+  <form class="flex justify-center mb-6" method="get">
+    <input type="text" name="search" placeholder="Rechercher..."
+           value="<?= htmlspecialchars($search) ?>"
+           class="px-4 py-2 border border-gray-300 rounded-l-md w-64">
+    <button type="submit" class="bg-blue-600 text-white px-4 rounded-r-md hover:bg-blue-700">
+      <i class="fas fa-search"></i>
+    </button>
+  </form>
+
+  <?php if (count($patients) > 0): ?>
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white shadow-md rounded-md overflow-hidden">
+        <thead class="bg-blue-100">
+          <tr>
+            <th class="px-4 py-3 text-left">Nom</th>
+            <th class="px-4 py-3 text-left">Prénom</th>
+            <th class="px-4 py-3 text-left">Naissance</th>
+            <th class="px-4 py-3 text-left">Téléphone</th>
+            <th class="px-4 py-3 text-left">Email</th>
+            <th class="px-4 py-3 text-left" colspan="2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($patients as $patient): ?>
+            <tr class="border-t">
+              <td class="px-4 py-2"><?= htmlspecialchars($patient['lastname']) ?></td>
+              <td class="px-4 py-2"><?= htmlspecialchars($patient['firstname']) ?></td>
+              <td class="px-4 py-2"><?= htmlspecialchars($patient['birthdate']) ?></td>
+              <td class="px-4 py-2"><?= htmlspecialchars($patient['phone']) ?></td>
+              <td class="px-4 py-2"><?= htmlspecialchars($patient['mail']) ?></td>
+              <td class="px-2 py-2">
+                <a href="profil-patient.php?id=<?= $patient['id'] ?>"
+                   class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                  <i class="fas fa-eye"></i> Voir
+                </a>
+              </td>
+              <td class="px-2 py-2">
+                <a href="profil-patient.php?id=<?= $patient['id'] ?>&action=delete2"
+                   class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                  <i class="fas fa-trash-alt"></i> Supprimer
+                </a>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-6 flex justify-center space-x-2">
+      <?php if ($pageActuelle > 1): ?>
+        <a href="?page=<?= $pageActuelle - 1 ?>&search=<?= urlencode($search) ?>"
+           class="px-3 py-1 border rounded hover:bg-gray-100">&laquo;</a>
+      <?php endif; ?>
+
+      <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+        <?php if ($i == $pageActuelle): ?>
+          <span class="px-3 py-1 border border-blue-500 bg-blue-500 text-white rounded"><?= $i ?></span>
+        <?php else: ?>
+          <a href="?page=<?= $i ?>&search=<?= urlencode($search) ?>"
+             class="px-3 py-1 border rounded hover:bg-gray-100"><?= $i ?></a>
+        <?php endif; ?>
+      <?php endfor; ?>
+
+      <?php if ($pageActuelle < $totalPages): ?>
+        <a href="?page=<?= $pageActuelle + 1 ?>&search=<?= urlencode($search) ?>"
+           class="px-3 py-1 border rounded hover:bg-gray-100">&raquo;</a>
+      <?php endif; ?>
+    </div>
+
+  <?php else: ?>
+    <div class="bg-red-100 text-red-800 px-4 py-3 rounded mt-4 text-center">
+      Aucun patient trouvé.
+    </div>
+  <?php endif; ?>
+</div>
+
+<?php include 'footer.php'; ?>
