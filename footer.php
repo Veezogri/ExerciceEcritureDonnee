@@ -8,12 +8,12 @@
           <p class="text-sm">CRM développé avec ❤️ par <strong>Fares RIAL</strong></p>
         </div>
 
-        <div class="flex space-x-6 text-2xl">
-          <a href="https://www.linkedin.com/in/fares-rial-4064471b3/" title="LinkedIn" class="hover:text-gray-300 transition">
-            <i class="fab fa-linkedin"></i>
+        <div class="flex space-x-6">
+          <a href="https://www.linkedin.com/in/fares-rial-4064471b3/" title="LinkedIn" target="_blank" class="group relative inline-flex items-center justify-center overflow-hidden text-white rounded-full w-10 h-10 bg-gray-700 hover:bg-gradient-to-r hover:from-blue-600 hover:to-blue-400 transition">
+            <i class="fab fa-linkedin transition duration-300 group-hover:scale-110"></i>
           </a>
-          <a href="https://github.com/Veezogri" target="_blank" title="GitHub" class="hover:text-gray-300 transition">
-            <i class="fab fa-github"></i>
+          <a href="https://github.com/Veezogri" title="GitHub" target="_blank" class="group relative inline-flex items-center justify-center overflow-hidden text-white rounded-full w-10 h-10 bg-gray-700 hover:bg-gradient-to-r hover:from-gray-600 hover:to-gray-400 transition">
+            <i class="fab fa-github transition duration-300 group-hover:scale-110"></i>
           </a>
         </div>
       </div>
